@@ -14,8 +14,8 @@
 
 	<body>
 		<div id="info">
-			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - <span style="color:red">Space to swap mode, backquote (`) to recenter camera.</span><br />
-			<span style="color:red">Flight Mode: WASD move, QE tilt, ArrowKeys/MouseDrag to 'look'.</span><br />
+			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> + <a href="https://www.blender.org/">blender</a> - <span style="color:red">Space to swap mode, backquote (`) to recenter camera. I created every model personally, so: All rights reserved, no stealeroni please.</span><br />
+			<span style="color:red">Flight Mode: WASD move, QE tilt, ArrowKeys/MouseDrag to 'look'. || </span>
 			<span style="color:red">Orbit Mode: Left Click Orbit, Right Click Pan, Middle Mouse Zoom.</span><br />
 		</div>
 
@@ -101,10 +101,10 @@
 				var material = new THREE.ShaderMaterial({
 				  uniforms: {
 				    color1: {
-				      value: new THREE.Color("purple")
+				      value: new THREE.Color("#282540") // purple
 				    },
 				    color2: {
-				      value: new THREE.Color("#009999")
+				      value: new THREE.Color("#000000") // #009999
 				    },
 				    bboxMin: {
 				      value: skyboxGeo.boundingBox.min
