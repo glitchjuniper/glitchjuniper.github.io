@@ -14,7 +14,9 @@
 
 	<body>
 		<div id="info">
-			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - GLTFLoader + <a href="https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_sheen" target="_blank" rel="noopener">KHR_materials_sheen</a><br />
+			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - <span style="color:red">Space to swap mode, backquote (`) to recenter camera.</span><br />
+			<span style="color:red">Flight Mode: WASD move, QE tilt, ArrowKeys/MouseDrag to 'look'.</span><br />
+			<span style="color:red">Orbit Mode: Left Click Orbit, Right Click Pan, Middle Mouse Zoom.</span><br />
 		</div>
 
 		<!-- Import maps polyfill -->
@@ -36,12 +38,17 @@
 			import * as THREE from 'three';
 
 			import { OrbitControls } from 'https://unpkg.com/three@0.139.2/examples/jsm/controls/OrbitControls.js';
+			import { FlyControls } from 'https://unpkg.com/three@0.139.2/examples/jsm/controls/FlyControls.js';
 			import { GLTFLoader } from 'https://unpkg.com/three@0.139.2/examples/jsm/loaders/GLTFLoader.js';
 			import { RoomEnvironment } from 'https://unpkg.com/three@0.139.2/examples/jsm/environments/RoomEnvironment.js';
 
 			import { GUI } from 'https://unpkg.com/three@0.139.2/examples/jsm/libs/lil-gui.module.min.js';
 
 			let camera, scene, renderer, controls;
+			let fcontrols, ocontrols;
+			let currentControls = "orbit";
+
+			const clock = new THREE.Clock();
 
 			init();
 			animate();
@@ -51,11 +58,10 @@
 				const container = document.createElement( 'div' );
 				document.body.appendChild( container );
 
-				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 20000 );
 				camera.position.set( 110, 200, 0 );
-				camera.zoom = 3;
-				console.log(camera.zoom);
-				// camera.lookAt(0, 0, 0);
+				// camera.zoom = 3;
+				camera.lookAt(0, 0, 0);
 
 				scene = new THREE.Scene();
 
@@ -69,8 +75,72 @@
 
 				// axess helper - The X axis is red. The Y axis is green. The Z axis is blue.
 
-				const axesHelper = new THREE.AxesHelper( 5 );
-				scene.add( axesHelper );
+				/*const axesHelper = new THREE.AxesHelper( 5 );
+				scene.add( axesHelper );*/
+
+				// direction arrow helper
+
+				/*const dir = new THREE.Vector3( 1, 0, 0 );
+
+				//normalize the direction vector (convert to vector of length 1)
+				dir.normalize();
+
+				const origin = new THREE.Vector3( -200, 100, 0 );
+				const length = 400;
+				const hex = 0xffff00;
+
+				const arrowHelper = new THREE.ArrowHelper( dir, origin, length, hex );
+				scene.add( arrowHelper );*/
+
+				// skybox helper 
+
+				// https://stackoverflow.com/questions/52614371/apply-color-gradient-to-material-on-mesh-three-js
+				// https://stackoverflow.com/questions/52614371/apply-color-gradient-to-material-on-mesh-three-js
+				const skyboxGeo = new THREE.BoxGeometry(1000, 1000, 1000);
+				skyboxGeo.computeBoundingBox();
+				var material = new THREE.ShaderMaterial({
+				  uniforms: {
+				    color1: {
+				      value: new THREE.Color("purple")
+				    },
+				    color2: {
+				      value: new THREE.Color("#009999")
+				    },
+				    bboxMin: {
+				      value: skyboxGeo.boundingBox.min
+				    },
+				    bboxMax: {
+				      value: skyboxGeo.boundingBox.max
+				    }
+				  },
+				  vertexShader: `
+				    uniform vec3 bboxMin;
+				    uniform vec3 bboxMax;
+				  
+				    varying vec2 vUv;
+
+				    void main() {
+				      vUv.y = (position.y - bboxMin.y) / (bboxMax.y - bboxMin.y);
+				      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+				    }
+				  `,
+				  fragmentShader: `
+				    uniform vec3 color1;
+				    uniform vec3 color2;
+				  
+				    varying vec2 vUv;
+				    
+				    void main() {
+				      
+				      gl_FragColor = vec4(mix(color1, color2, vUv.y), 0.1);
+				    }
+				  `,
+				  wireframe: false,
+				  side: THREE.BackSide,
+				});
+
+				const skybox = new THREE.Mesh(skyboxGeo, material);
+  				scene.add(skybox);
 
 				// model
 
@@ -79,13 +149,6 @@
 					.load( 'enterthestorm_blocking_4.glb', function ( gltf ) {
 
 						scene.add( gltf.scene );
-
-						// const object = gltf.scene.getObjectByName( 'SheenChair_fabric' );
-
-						// const gui = new GUI();
-
-						// gui.add( object.material, 'sheen', 0, 1 );
-						// gui.open();
 
 					} );
 
@@ -103,16 +166,85 @@
 				scene.background = new THREE.Color( 0xbbbbbb );
 				scene.environment = pmremGenerator.fromScene( environment ).texture;
 
-				controls = new OrbitControls( camera, renderer.domElement );
-				controls.enableDamping = true;
-				controls.minDistance = 1;
-				// controls.maxDistance = 10; // allow infinity
-				controls.target.set( -5, 70, 0 ); // as if you were looking in this direction
-				controls.update();
+				// https://threejs.org/docs/?q=controls#examples/en/controls/FlyControls
+				// fcontrols = new FlyControls( camera, renderer.domElement );
+				// fcontrols.movementSpeed = 15;
+				// fcontrols.rollSpeed = .7;
+				// fcontrols.dragToLook = true;
+
+				// ocontrols = new OrbitControls( camera, renderer.domElement );
+				// ocontrols.keyPanSpeed = 30.0;
+				// ocontrols.enableDamping = true;
+				// ocontrols.minDistance = 1;
+				// // controls.maxDistance = 10; // allow infinity
+				// ocontrols.target.set( -5, 70, 0 ); // as if you were looking in this direction
+
+				if ( currentControls == "orbit" ) {
+					controls = generateOrbitControls();	
+				}
+				else {
+					controls = generateFlyControls();
+				}
+				
+				// controls.update();
 
 				window.addEventListener( 'resize', onWindowResize );
+				window.addEventListener( 'keydown', onKeydown );
 
 			}
+
+			function resetCamera () {
+				camera.position.set( 110, 200, 0 );
+				// camera.zoom = 3;
+				camera.lookAt(0, 0, 0);
+			}
+
+			function generateOrbitControls () {
+				let ocontrols = new OrbitControls( camera, renderer.domElement );
+				ocontrols.keyPanSpeed = 30.0;
+				ocontrols.enableDamping = true;
+				ocontrols.minDistance = 1;
+				// controls.maxDistance = 10; // allow infinity
+				ocontrols.target.set( -5, 70, 0 ); // as if you were looking in this direction
+
+				return ocontrols;
+			}
+
+			function generateFlyControls () {
+				// https://threejs.org/docs/?q=controls#examples/en/controls/FlyControls
+				let fcontrols = new FlyControls( camera, renderer.domElement );
+				fcontrols.movementSpeed = 50;
+				fcontrols.rollSpeed = .7;
+				fcontrols.dragToLook = true;
+
+				return fcontrols;
+			}
+
+			function onKeydown (e) {
+
+				function spaceHandler () {
+					controls.dispose();
+					if ( currentControls == "orbit" ) {
+						controls = generateFlyControls();
+						currentControls = "flight"
+					}
+					else {
+						controls =  generateOrbitControls();
+						currentControls = "orbit"
+					}
+					controls.update();
+					resetCamera(); // this goes AFTER controls.update
+					camera.updateProjectionMatrix();
+				}
+
+				const {code} = e;
+				const cb = {
+					"Space": spaceHandler,
+					"Backquote": resetCamera,
+				}[code];
+				cb?.();
+			}
+
 
 			function onWindowResize() {
 
@@ -127,10 +259,19 @@
 
 			function animate() {
 
+				// orbit controls
+				// if ( currentControls == "orbit" ) {
+					// controls.update(); // required if damping enabled	
+				// }
+				// else {
+					// fly controls
+					const delta = clock.getDelta();
+					// controls.movementSpeed = 100 * delta;
+
+					controls.update(delta);
+				// }
+
 				requestAnimationFrame( animate );
-
-				controls.update(); // required if damping enabled
-
 				render();
 
 			}
