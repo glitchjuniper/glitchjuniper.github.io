@@ -15,7 +15,7 @@
 	<body>
 		<div id="info">
 			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> + <a href="https://www.blender.org/" target="_blank" rel="noopener">blender</a> - 
-			<a href="https://www.instagram.com/mapmotionrp/" target="_blank" rel="noopener">Original Map By mapmotionrp</a> - <span style="color:red">Space to swap mode, backquote (`) to recenter camera. I created every model personally, so: All rights reserved</span><br />
+			<a href="https://www.instagram.com/mapmotionrp/" target="_blank" rel="noopener">Original Map By mapmotionrp</a> - <span style="color:red">Space to swap mode, backquote (`) to recenter camera, (1) to toggle fog. I created every model personally, so: All rights reserved</span><br />
 			<span style="color:red">Flight Mode: WASD move, QE tilt, ArrowKeys/MouseDrag to 'look'. || </span>
 			<span style="color:red">Orbit Mode: Left Click Orbit, Right Click Pan, Middle Mouse Zoom.</span><br />
 		</div>
@@ -48,6 +48,9 @@
 			let camera, scene, renderer, controls;
 			let fcontrols, ocontrols;
 			let currentControls = "orbit";
+			let fogOn = true;
+			// const fog = new THREE.Fog('gray', 100, 200); // color, near, far. we can use FogExp2 with (color, density) params instead for a bit more realism.
+			const fog = new THREE.FogExp2('gray', .00925);
 
 			const clock = new THREE.Clock();
 
@@ -102,10 +105,10 @@
 				var material = new THREE.ShaderMaterial({
 				  uniforms: {
 				    color1: {
-				      value: new THREE.Color("#282540") // purple
+				      value: new THREE.Color("gray") // #282540, purple
 				    },
 				    color2: {
-				      value: new THREE.Color("#000000") // #009999
+				      value: new THREE.Color("gray") // #000000, #009999
 				    },
 				    bboxMin: {
 				      value: skyboxGeo.boundingBox.min
@@ -133,7 +136,7 @@
 				    
 				    void main() {
 				      
-				      gl_FragColor = vec4(mix(color1, color2, vUv.y), 0.1);
+				      gl_FragColor = vec4(mix(color1, color2, vUv.y), 1); // changing this value from 1 to .1 increases lightness ( .1 is more light! )
 				    }
 				  `,
 				  wireframe: false,
@@ -142,6 +145,12 @@
 
 				const skybox = new THREE.Mesh(skyboxGeo, material);
   				scene.add(skybox);
+
+  				// fog - example: https://r105.threejsfundamentals.org/threejs/lessons/threejs-fog.html
+
+  				// we simply add a THREE.Fog to the scene's 'fog' attribute if it's on.
+  				if ( fogOn )
+  					scene.fog = fog;
 
 				// model
 
@@ -221,6 +230,16 @@
 				return fcontrols;
 			}
 
+			function fogToggle () {
+				if ( fogOn ) { // toggle fog off
+					scene.fog = null;
+				}
+				else if ( !fogOn ) {
+					scene.fog = fog; // fog const we set up earlier in the script.
+				}
+				fogOn = !fogOn;
+			}
+
 			function onKeydown (e) {
 
 				function spaceHandler () {
@@ -239,9 +258,11 @@
 				}
 
 				const {code} = e;
+				console.log(code);
 				const cb = {
 					"Space": spaceHandler,
 					"Backquote": resetCamera,
+					"Digit1": fogToggle,
 				}[code];
 				cb?.();
 			}
